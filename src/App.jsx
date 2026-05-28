@@ -13,14 +13,11 @@ function App() {
 
   // Global State
   const [products, setProducts] = useState(initialProducts);
-  const [expenses] = useState(initialExpenses); // Gastos son estáticos en el prototipo
+  const [expenses, setExpenses] = useState(initialExpenses);
   const [sales, setSales] = useState(mockSales);
 
   const registerSale = (saleData) => {
-    // 1. Add sale to history
     setSales([...sales, { id: Date.now(), ...saleData }]);
-
-    // 2. Update stock
     const updatedProducts = products.map(product => {
       const soldItem = saleData.items.find(item => item.id === product.id);
       if (soldItem) {
@@ -29,6 +26,18 @@ function App() {
       return product;
     });
     setProducts(updatedProducts);
+  };
+
+  const addExpense = (expense) => {
+    setExpenses([...expenses, { id: Date.now(), ...expense }]);
+  };
+
+  const updateExpense = (id, updatedExpense) => {
+    setExpenses(expenses.map(e => e.id === id ? { ...e, ...updatedExpense } : e));
+  };
+
+  const deleteExpense = (id) => {
+    setExpenses(expenses.filter(e => e.id !== id));
   };
 
   // Render logic
@@ -48,7 +57,7 @@ function App() {
       case 'inventory':
         return <Inventory products={products} />;
       case 'expenses':
-        return <Expenses expenses={expenses} />;
+        return <Expenses expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} />;
       case 'dashboard':
         return <Dashboard products={products} expenses={expenses} sales={sales} />;
       default:
