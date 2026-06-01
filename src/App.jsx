@@ -1,74 +1,66 @@
 import React, { useState } from 'react';
-import Login from './components/Login';
-import Layout from './components/Layout';
-import POS from './views/POS';
-import Inventory from './views/Inventory';
-import Expenses from './views/Expenses';
-import Dashboard from './views/Dashboard';
-import { initialProducts, initialExpenses, mockSales } from './data/mockData';
+import { useAppData } from './context/AppDataContext';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Products from './pages/Products';
+import Sales from './pages/Sales';
+import Expenses from './pages/Expenses';
+import { LayoutDashboard, Package, ShoppingCart, DollarSign, LogOut } from 'lucide-react';
 
 function App() {
-  const [role, setRole] = useState(null); // 'admin' | 'vendedora' | null
-  const [view, setView] = useState('login'); // 'login' | 'pos' | 'inventory' | 'expenses' | 'dashboard'
+  const { isAuthenticated, logout } = useAppData();
+  const [currentView, setCurrentView] = useState('dashboard');
 
-  // Global State
-  const [products, setProducts] = useState(initialProducts);
-  const [expenses, setExpenses] = useState(initialExpenses);
-  const [sales, setSales] = useState(mockSales);
-
-  const registerSale = (saleData) => {
-    setSales([...sales, { id: Date.now(), ...saleData }]);
-    const updatedProducts = products.map(product => {
-      const soldItem = saleData.items.find(item => item.id === product.id);
-      if (soldItem) {
-        return { ...product, stock: product.stock - soldItem.quantity };
-      }
-      return product;
-    });
-    setProducts(updatedProducts);
-  };
-
-  const addExpense = (expense) => {
-    setExpenses([...expenses, { id: Date.now(), ...expense }]);
-  };
-
-  const updateExpense = (id, updatedExpense) => {
-    setExpenses(expenses.map(e => e.id === id ? { ...e, ...updatedExpense } : e));
-  };
-
-  const deleteExpense = (id) => {
-    setExpenses(expenses.filter(e => e.id !== id));
-  };
-
-  // Render logic
-  if (!role || view === 'login') {
-    return <Login setRole={setRole} setView={setView} />;
-  }
-
-  // Si la vendedora intenta entrar a otra vista que no sea POS, la forzamos a POS
-  if (role === 'vendedora' && view !== 'pos') {
-    setView('pos');
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
   const renderView = () => {
-    switch (view) {
-      case 'pos':
-        return <POS products={products} registerSale={registerSale} />;
-      case 'inventory':
-        return <Inventory products={products} />;
-      case 'expenses':
-        return <Expenses expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} />;
-      case 'dashboard':
-        return <Dashboard products={products} expenses={expenses} sales={sales} />;
-      default:
-        return <POS products={products} registerSale={registerSale} />;
+    switch (currentView) {
+      case 'dashboard': return <Dashboard />;
+      case 'products': return <Products />;
+      case 'sales': return <Sales />;
+      case 'expenses': return <Expenses />;
+      default: return <Dashboard />;
     }
   };
 
+  const navItems = [
+    { id: 'dashboard', label: 'Resumen', icon: <LayoutDashboard size={20} /> },
+    { id: 'products', label: 'Productos', icon: <Package size={20} /> },
+    { id: 'sales', label: 'Ventas', icon: <ShoppingCart size={20} /> },
+    { id: 'expenses', label: 'Gastos Fijos', icon: <DollarSign size={20} /> },
+  ];
+
   return (
-    <Layout role={role} currentView={view} setView={setView} setRole={setRole}>
-      {renderView()}
-    </Layout>
+    <div className="app-container">
+      <nav className="sidebar">
+        <div className="sidebar-brand">Giorgio<br/>Gestion</div>
+        <div className="nav-links">
+          {navItems.map(item => (
+            <div 
+              key={item.id}
+              className={`nav-item ${currentView === item.id ? 'active' : ''}`}
+              onClick={() => setCurrentView(item.id)}
+            >
+              {item.icon} {item.label}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '1rem' }}>
+          <button 
+            className="btn" 
+            style={{ width: '100%', backgroundColor: 'var(--color-bg-input)', color: 'var(--color-text-muted)' }}
+            onClick={logout}
+          >
+            <LogOut size={18} /> Salir
+          </button>
+        </div>
+      </nav>
+      <main className="main-content">
+        {renderView()}
+      </main>
+    </div>
   );
 }
 
